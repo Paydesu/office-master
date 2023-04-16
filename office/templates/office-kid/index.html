@@ -1,0 +1,40 @@
+{% extends 'office/base.html' %}
+{% load static %} 
+{% block content %}
+<table>
+
+    <caption>案件一覧</caption>
+    <tr>
+        <th scope="col">取引先</th>
+        <th scope="col">整理番号</th>
+        <th scope="col">客先納期</th>
+        <th scope="col">社内納期</th>
+        <th scope="col">メモ</th>
+        <th scope="col">追加メモ</th>
+        <th scope="col">作成日</th>
+        <th scope="col">図面</th>
+        <th scope="col">編集</th>
+        <th scope="col">削除</th>
+
+        {% for post_kid in post_kids %}
+    </tr>
+    <th scope="row">{{ post_kid.customer }}</th>
+    <td>{{ post_kid.sirial_number }}</td>
+    <td>{{ post_kid.customer_deadline }}</td>
+    <td>{{ post_kid.my_company_deadline }}</td>
+    <td>{{ post_kid.post_data }}</td>
+    <td>{{ post_kid.add_memo }}</td>
+    <td>{{ post_kid.created_at }}</td>
+    
+    {% if post_kid.image %}
+        <td><img src="{{ post_kid.image.url }}" width="350" height="200"/></td>
+    {% else %}
+        <td>図面なし</td>
+    {% endif %}
+    <td><a href="{% url 'office-kid-update' post_kid.id %}">編集</a></td>
+    <td><a href="{% url 'office-kid-delete' post_kid.id %}">削除</a></td>
+    <tr>
+        {% endfor %}
+    </tr>
+</table>
+{% endblock %}

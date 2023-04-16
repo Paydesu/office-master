@@ -1,0 +1,13 @@
+<h3>Delete</h3>
+<p>本当に「{{ post.customer }} の案件」を削除しますか？</p>
+</div>
+<div class="form-top-right">
+    <i class="fa fa-pencil"></i>
+</div>
+</div>
+<div class="form-bottom">
+    <form method='POST' role="form" action="" class="login-form">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Delete</button>
+    </form>
+</div>

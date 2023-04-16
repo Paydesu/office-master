@@ -1,0 +1,22 @@
+{% load static %}
+<!doctype html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/base.css' %}">
+</head>
+
+<body>
+    <ul id="nav">
+        <li><a href="{% url 'office-index'%}">案件一覧</a></li>
+        <li><a href="{% url 'customer-index'%}">取引先一覧</a></li>
+        <li><a href="{% url 'office-create'%}">案件入力</a></li>
+        <li><a href="{% url 'customer-create' %}">取引先入力</a></li>
+    </ul>
+    <div class="container">
+        {% block content %} {% endblock %}
+    </div>
+</body>
+
+</html>

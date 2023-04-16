@@ -1,0 +1,20 @@
+{% extends 'office/base.html' %}
+{% load static %} 
+{% block content %}
+<table>
+    <caption>取引先一覧</caption>
+    <tr>
+        <th scope="col">材質名</th>
+        <th scope="col">編集</th>
+        <th scope="col">削除</th>
+        {% for material in materials %}
+    </tr>
+    <th scope="row"></th>
+    <td>{{ material.name }}</td>
+    <td><a href="{% url 'material-update' material.id %}">編集</a></td>
+    <td><a href="{% url 'material-delete' material.id %}">削除</a></td>
+    <tr>
+        {% endfor %}
+    </tr>
+</table>
+{% endblock %}

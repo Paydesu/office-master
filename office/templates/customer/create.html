@@ -1,0 +1,9 @@
+{% extends 'office/base.html' %}
+{% load static %} 
+{% block content %}
+<form action="{% url 'customer-create' %}" method="POST" enctype="multipart/form-data">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <input type="submit" value="投稿" />
+</form>
+{% endblock %}
