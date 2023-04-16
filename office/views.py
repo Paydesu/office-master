@@ -13,19 +13,12 @@ from django.views.generic import (
 )
 from django.utils import timezone
 from .models import Post, KidPost, Customer, Material
-from django.db.models import Q
 from .forms import OfficeForm, OfficeKidForm
 import requests
 import os
 from pathlib import Path
-import glob
-# import win32com.client
-
-# printer function
-
-import xlrd
-import xlwt
-from xlutils.copy import copy
+import win32com.client
+import pythoncom
 
 import datetime
 
@@ -33,13 +26,28 @@ now = datetime.datetime.now()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+class Excel():
+
+    def __init__(self, visible=False):
+        """ Excel機能を提供するクラス """
+        pythoncom.CoInitialize()  # Excelを起動する前にこれを呼び出す
+        self._app = win32com.client.DispatchEx("Excel.Application")
+        self._app.Visible = visible
+
+    def app(self):
+        return self._app
+
+    def quit(self):
+        """ Excelを終了させる """
+        self.app.Quit()
+        pythoncom.CoUninitialize()  # Excelを終了した後はこれを呼び出す
 
 class PostListView(ListView):
     model = Post
     template_name = 'office/index.html'
     context_object_name = 'posts'
     ordering = ['customer_deadline']
-    
+
 
 class WinPostCreateView(CreateView):
     model = Post
@@ -47,34 +55,33 @@ class WinPostCreateView(CreateView):
     form_class = OfficeForm
     template_name = 'office/create.html'
     success_url = reverse_lazy('office-index')
-    
+
     def form_valid(self, form):
         # Excelテンプレートを読み込む
-        excel = win32com.client.Dispatch("Excel.Application")
-        workbook = excel.Workbooks.Open(os.path.abspath('data/temp_prot.xlsx'))
-        worksheet = workbook.Worksheets('Sheet1')
-
+        excel = Excel().app()
+        excel.DisplayAlerts = False
+        workbook = excel.Workbooks.Open(os.path.abspath('data/excel/temp_prot.xlsx'))
+        worksheet = excel.Workbooks[0].Worksheets(1)
         # 入力内容をExcelファイルに書き込む
         res = self.request.POST
-        workbook.Range("C3").Value = res['customer']
-        workbook.Range("G3").Value = now.strftime("%m/%d (%A)")
-        workbook.Range("J3").Value = res['my_company_deadline']
-        workbook.Range("N3").Value = res['customer_deadline']
-        workbook.Range("D4").Value = res['memo']
-        workbook.Range("T3").Value = res['customer']
-        workbook.Range("AF3").Value = res['quantity']
-        workbook.Range("T4").Value = res['material']
-        workbook.Range("U5").Value = res['memo']
-        workbook.Range("AD39").Value = res['customer']
-        workbook.Range("").Value = res['']
+        worksheet.Range("B2").Value = Post.object.get(customer=(res['customer']))
+        worksheet.Range("F2").Value = now.strftime("%m/%d (%A)")
+        worksheet.Range("I2").Value = res['my_company_deadline_month'] + '/' + res['my_company_deadline_day']
+        worksheet.Range("N2").Value = res['customer_deadline_month']+'/'+res['customer_deadline_day']
+        worksheet.Range("D3").Value = res['memo']
+        worksheet.Range("S2").Value = res['customer']
+        worksheet.Range("AF2").Value = res['quantity']
+        worksheet.Range("T3").Value = res['material']
+        worksheet.Range("U6").Value = res['memo']
+        worksheet.Range("AC38").Value = res['customer']
 
         # PDFファイルを作成する
-        output_path = os.path.abspath('path/to/output.pdf')
-        workbook.ExportAsFixedFormat(0, output_path)
+        output_path = os.path.abspath('output.pdf')
+        worksheet.ExportAsFixedFormat(0, output_path)
 
         # Excelを終了する
-        workbook.Close(False)
-        excel.Quit()
+        workbook.Close()
+        excel.quit()
 
         # PDFファイルをダウンロードさせる
         with open(output_path, 'rb') as f:
@@ -82,131 +89,30 @@ class WinPostCreateView(CreateView):
             response['Content-Disposition'] = 'attachment; filename=output.pdf'
         os.remove(output_path)
         return response
-    
-        excel = win32com.client.Dispatch("Excel.Application")        #Excelを操作するための設定
+
+        excel = win32com.client.DispatchEx(
+            "Excel.Application")  # Excelを操作するための設定
         file = excel.Workbooks.Open('Excelファイルの絶対パス')
         excel = win32com.client.Dsipatch("Excel.Application")
         file = excel.Workbooks.Open("エクセルファイルの絶対パス(拡張子は.xlsx)")
-        file.WorkSheets(BASE_DIR.joinpath('data/excel/temp_prot.xlsx')).Select()
+        file.WorkSheets(BASE_DIR.joinpath(
+            'data/excel/temp_prot.xlsx')).Select()
         file.ActiveSheet.ExportAsFixedFormat(0, "output.pdf")
-    
+
+
 class PostCreateView(CreateView):
     model = Post
     # fields = '__all__'
     form_class = OfficeForm
     template_name = 'office/create.html'
     success_url = reverse_lazy('office-index')
+
     def get_success_url(self):
         # rb = xlrd.open_workbook((BASE_DIR.joinpath(
         #     'data/excel'), 'temp_prot.xlsx'), formatting_info=True, on_demand=True)
         return resolve_url('office-index')
-""""
-    def form_valid(self, form):
-        # self.request.session['POST'] = self.request.POST
-        res = self.request.POST
 
-        # Excelファイルにデータを入力する
-        wb = xlwt.Workbook()
-        print("fuck!!!!!!!")
-        rb = load_workbook((BASE_DIR.joinpath('data/excel/temp_prot.xlsx')))
-        ws = rb.active
-        ws['C3'] = res['customer']
-        ws['D4'] = res['memo']
-        # PDFファイルを作成する
-        response = HttpResponse(content_type='application/pdf')
-        response['Content-Disposition'] = 'attachment; filename="output.pdf"'
-        p = canvas.Canvas(response)
 
-        # Excelファイルの内容をPDFに書き込む
-        x_offset = 50
-        y_offset = 720
-        row_height = 20
-        for row in ws.iter_rows():
-            for cell in row:
-                p.drawString(x_offset, y_offset, str(cell.value))
-                x_offset += 100
-            y_offset -= row_height
-            x_offset = 50
-
-        # PDFファイルを保存する
-        p.showPage()
-        p.save()
-        return response
-"""
-    # Excelのテンプレートファイルの読み込み
-
-    # 読み込んだExcelファイルをコピーする
-    # wb = copy(rb)
-    # # フォント設定（Excelファイル内部でよく使うものはあらかじめ設定しておいた方が良いです。）
-    # font_normal = xlwt.Font()
-    # font_normal.name = 'ＭＳ Ｐ明朝'
-    # # テキストを書き込む
-    # wb.write(row, col, value, style_text)
-    # # 日付を書き込む
-    # wb.write(row, col, value, style_date)
-    # # 通貨を書き込む
-    # wb.write(row, col, value, style_currency)
-    # # 数値を書き込む
-    # wb.write(row, col, value, style_num)
-    # # Decimalを書き込む
-    # wb.write(row, col, value, style_decimal)
-
-    # # 表示位置設定（左寄せ上下中央揃え）
-    # align_normal = xlwt.Alignment()
-    # align_normal.horz = xlwt.Alignment.HORZ_LEFT
-    # align_normal.vert = xlwt.Alignment.VERT_CENTER
-
-    # # 表示位置設定（右寄せ上下中央揃え）
-    # align_right = xlwt.Alignment()
-    # align_right.horz = xlwt.Alignment.HORZ_RIGHT
-    # align_right.vert = xlwt.Alignment.VERT_CENTER
-
-    # # 罫線設定（全てに細い罫線を引く）
-    # border_all = xlwt.Borders()
-    # border_all.top = xlwt.Borders.THIN
-    # border_all.bottom = xlwt.Borders.THIN
-    # border_all.left = xlwt.Borders.THIN
-    # border_all.right = xlwt.Borders.THIN
-
-    # # 背景色設定（黄色）
-    # pattern = xlwt.Pattern()
-    # pattern.pattern = xlwt.Pattern.SOLID_PATTERN
-    # # 色と紐付くコードの情報はStyle.pyに記載されています。
-    # pattern.pattern_fore_colour = 0x0D
-
-    # # ノーマルなテキストのスタイル
-    # style_text = xlwt.XFStyle()
-    # style_text.font = font_normal
-    # style_text.borders = border_all
-    # style_text.alignment = align_normal
-
-    # # ノーマルな日付のスタイル
-    # style_date = xlwt.easyxf('font: name ＭＳ Ｐ明朝', 'YYYY年M月D日')
-    # style_date.borders = border_all
-    # style_date.alignment = align_normal
-
-    # # ノーマルな通貨のスタイル
-    # style_currency = xlwt.easyxf('font: name ＭＳ Ｐ明朝', '¥#,##0')
-    # style_currency.borders = border_all
-    # style_currency.alignment = align_normal
-
-    # # 右寄せの通貨のスタイル
-    # style_currency_align_right = xlwt.easyxf('font: name ＭＳ Ｐ明朝', '¥#,##0')
-    # style_currency_align_right.borders = border_all
-    # style_currency_align_right.alignment = align_right
-
-    # # ノーマルな数値のスタイル
-    # style_num = xlwt.easyxf('font: name ＭＳ Ｐ明朝', '#,##0')
-    # style_num.borders = border_all
-    # style_num.alignment = align_right
-
-    # # ノーマルなDecimalのスタイル
-    # style_decimal = xlwt.easyxf('font: name ＭＳ Ｐ明朝', '#,##0.0')
-    # style_decimal.borders = border_all
-    # style_decimal.alignment = align_right
-
-    # # WorkBookからWorkSheetを取得する
-    # ws = wb.get_sheet(sheet_name)
 
 
 

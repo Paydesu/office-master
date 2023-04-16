@@ -5,12 +5,10 @@ from django.conf.urls.static import static
 
 from . import views
 
-
-
 urlpatterns = [
-    path('wincreate/', views.WinPostCreateView.as_view(), name = 'win-office-create'),
+    path('create/', views.WinPostCreateView.as_view(), name = 'office-create'),
     path('', views.PostListView.as_view(), name = 'office-index'),
-    path('create/', views.PostCreateView.as_view(), name = 'office-create'),
+    path('wincreate/', views.PostCreateView.as_view(), name = 'win-office-create'),
     path('<int:pk>/update/', views.PostUpdateView.as_view(), name='office-update'),
     path('<int:pk>/detail/', views.PostDetailView.as_view(), name='office-detail'),
     path('<int:pk>/delete/', views.PostDeleteView.as_view(), name='office-delete'),
