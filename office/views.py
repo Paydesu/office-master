@@ -16,15 +16,23 @@ from .models import Post, KidPost, Customer, Material
 from .forms import OfficeForm, OfficeKidForm
 import requests
 import os
+import subprocess
+import PyPDF2
 from pathlib import Path
 import win32com.client
 import pythoncom
 
-import datetime
+import pyautogui
+import time
 
-now = datetime.datetime.now()
+import datetime
+import locale
+import calendar
+import random
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
 
 class Excel():
 
@@ -42,6 +50,7 @@ class Excel():
         self.app.Quit()
         pythoncom.CoUninitialize()  # Excelを終了した後はこれを呼び出す
 
+
 class PostListView(ListView):
     model = Post
     template_name = 'office/index.html'
@@ -54,50 +63,132 @@ class WinPostCreateView(CreateView):
     # fields = '__all__'
     form_class = OfficeForm
     template_name = 'office/create.html'
-    success_url = reverse_lazy('office-index')
-
     def form_valid(self, form):
+        # 整理番号のランダム生成
+        def randstr(length):
+            return ''.join([chr(random.randint(65, 90)) for _ in range(length)])
+        w_list = ['月', '火', '水', '木', '金', '土', '日']
         # Excelテンプレートを読み込む
         excel = Excel().app()
         excel.DisplayAlerts = False
-        workbook = excel.Workbooks.Open(os.path.abspath('data/excel/temp_prot.xlsx'))
+        workbook = excel.Workbooks.Open(
+            os.path.abspath('data/excel/コピーtemplating.xlsx'))
         worksheet = excel.Workbooks[0].Worksheets(1)
         # 入力内容をExcelファイルに書き込む
         res = self.request.POST
-        worksheet.Range("B2").Value = Post.object.get(customer=(res['customer']))
-        worksheet.Range("F2").Value = now.strftime("%m/%d (%A)")
-        worksheet.Range("I2").Value = res['my_company_deadline_month'] + '/' + res['my_company_deadline_day']
-        worksheet.Range("N2").Value = res['customer_deadline_month']+'/'+res['customer_deadline_day']
-        worksheet.Range("D3").Value = res['memo']
-        worksheet.Range("S2").Value = res['customer']
-        worksheet.Range("AF2").Value = res['quantity']
-        worksheet.Range("T3").Value = res['material']
-        worksheet.Range("U6").Value = res['memo']
-        worksheet.Range("AC38").Value = res['customer']
+        print('fuck', res)
+        now = datetime.datetime.now()
+        locale.setlocale(locale.LC_TIME, 'ja_JP.UTF-8')
+        print(locale.getlocale(locale.LC_TIME))
+        supply = '(持)'
+        try:
+            if res['supply'] == 'on':
+                supply = '(支)'
+        except:
+            supply = '(持)'
 
+        my_company_deadline_date = datetime.datetime(
+            int(res["my_company_deadline_year"]), int(res["my_company_deadline_month"]), int(res["my_company_deadline_day"]))
+        customer_deadline_date = datetime.datetime(
+            int(res["customer_deadline_year"]), int(res["customer_deadline_month"]), int(res["customer_deadline_day"]))
+        print(customer_deadline_date.strftime("%m/%d ") +
+              w_list[customer_deadline_date.weekday()])
+        random_id = randstr(2)
+        worksheet.Range("B2").Value = Customer.objects.get(
+            id=(res['customer'])).name
+        worksheet.Range("B2").Font.Size = 22
+        worksheet.Range("F2").Value = now.strftime(
+            "%m/%d ") + f'({w_list[now.weekday()]})'
+        worksheet.Range("F2").Font.Size = 16
+        worksheet.Range("I2").Value = my_company_deadline_date.strftime(
+            "%m/%d ") + '(' + w_list[my_company_deadline_date.weekday()] + ')'
+        worksheet.Range("I2").Font.Size = 22
+        worksheet.Range("M2").Value = customer_deadline_date.strftime(
+            "%m/%d ") + '(' + w_list[customer_deadline_date.weekday()] + ')'
+        worksheet.Range("M2").Font.Size = 22
+        worksheet.Range("C3").Value = res['memo']
+        worksheet.Range("C3").Font.Size = 28
+        worksheet.Range("T4").Value = res['memo']
+        worksheet.Range("T4").Font.Size = 28
+        worksheet.Range("U2").Value = random_id
+        worksheet.Range("U2").Font.Size = 28
+        worksheet.Range("S2").Value = Customer.objects.get(
+            id=(res['customer'])).name
+        worksheet.Range("S2").Font.Size = 16
+        worksheet.Range("AE2").Value = res['quantity']
+        worksheet.Range("AE2").Font.Size = 24
+        worksheet.Range("S3").Value = Material.objects.get(
+            id=(res['material'])).name + supply
+        worksheet.Range("S3").Font.Size = 28
+        worksheet.Range("AC38").Value = Customer.objects.get(
+            id=(res['customer'])).name
+        
+        worksheet.Range("AC38").Font.Size = 18
+        for i in range(int(res['quantity'])):
+            print(f"A{str(i+6)}", f"{random_id}{str(i+1)}")
+            worksheet.Range(f"A{str(i+6)}").Value = f"{random_id}{str(i+1)}"
+            worksheet.Range(f"A{str(i+6)}").Font.Size = 24
         # PDFファイルを作成する
-        output_path = os.path.abspath('output.pdf')
+        file_name = now.strftime("%Y%m%d")+random_id+'.pdf'
+        output_path = os.path.abspath(file_name)
         worksheet.ExportAsFixedFormat(0, output_path)
 
         # Excelを終了する
         workbook.Close()
         excel.quit()
-
+        print()
         # PDFファイルをダウンロードさせる
         with open(output_path, 'rb') as f:
             response = HttpResponse(f.read(), content_type='application/pdf')
-            response['Content-Disposition'] = 'attachment; filename=output.pdf'
-        os.remove(output_path)
+            response['Content-Disposition'] = f'attachment; filename={file_name}'
+        # os.remove(output_path)
+        def open_outputfile_directory(request):
+            os.startfile(output_path)
+            return HttpResponse("Directory opened successfully.")
+        time.sleep(3)
+
+        # redirect("file:///C:/Users/habir/Downloads/"+file_name)
+        print(output_path)
+        # redirect("file:///C:/Users/habir/OneDrive/%E3%83%87%E3%82%B9%E3%82%AF%E3%83%88%E3%83%83%E3%83%97/%E9%80%A3%E5%A4%AA%E9%83%8E/printer/new/"+file_name)
+        open_outputfile_directory(self.request)
+        # for i in range(35):
+        #     pyautogui.press('tab')
+        time.sleep(1)
+        pyautogui.hotkey('ctrlright','a')
+        pyautogui.hotkey('ctrlright','p')
+        time.sleep(4)
+        pyautogui.press('tab')
+        pyautogui.press('tab')
+        pyautogui.press('tab')
+        pyautogui.press('tab')
+        pyautogui.press('tab')
+        pyautogui.press('tab')
+        pyautogui.press('tab')
+        pyautogui.press('tab')
+        pyautogui.press('enter')
+        pyautogui.press('tab')
+        pyautogui.press('tab')
+        pyautogui.press('down')
+        time.sleep(1)
+        pyautogui.press('tab')
+        pyautogui.press('tab')
+        pyautogui.press('tab')
+        pyautogui.press('enter')
+
+        time.sleep(1)
+        redirect("http://127.0.0.1:8000/")
+
+
+        # pdf_file = open(output_path, 'rb')
+        # pdf_reader = PyPDF2.PdfFileReader(pdf_file)
+        
+        # start_page = 0
+        # end_page = pdf_reader.getNumPages() - 1
+        # print_command = f'start /wait / min Acro'
         return response
 
-        excel = win32com.client.DispatchEx(
-            "Excel.Application")  # Excelを操作するための設定
-        file = excel.Workbooks.Open('Excelファイルの絶対パス')
-        excel = win32com.client.Dsipatch("Excel.Application")
-        file = excel.Workbooks.Open("エクセルファイルの絶対パス(拡張子は.xlsx)")
-        file.WorkSheets(BASE_DIR.joinpath(
-            'data/excel/temp_prot.xlsx')).Select()
-        file.ActiveSheet.ExportAsFixedFormat(0, "output.pdf")
+    def get_success_url(self):
+        return reverse('office-index')
 
 
 class PostCreateView(CreateView):
@@ -111,9 +202,6 @@ class PostCreateView(CreateView):
         # rb = xlrd.open_workbook((BASE_DIR.joinpath(
         #     'data/excel'), 'temp_prot.xlsx'), formatting_info=True, on_demand=True)
         return resolve_url('office-index')
-
-
-
 
 
 class PostUpdateView(UpdateView):
