@@ -1,0 +1,41 @@
+{% extends 'office/base.html' %}
+{% load static %} 
+{% block content %}
+<table>
+
+    <caption>案件一覧</caption>
+    <tr>
+        <th scope="col">取引先</th>
+        <th scope="col">客先納期</th>
+        <th scope="col">社内納期</th>
+        <th scope="col">メモ</th>
+        <th scope="col">作成日</th>
+        <th scope="col">図面</th>
+        <th scope="col">編集</th>
+        <th scope="col">削除</th>
+        <th scope="col">用意済み</th>
+        <th scope="col">納品済み</th>
+
+        {% for project in object_list %}
+    </tr>
+    <th scope="row"><a href="{% url 'office-detail' project.id %}">{{ project.customer }}</a></th>
+    <td>{{ project.customer_deadline }}</td>
+    <td>{{ project.my_company_deadline }}</td>
+    <td>{{ project.memo }}</td>
+    <td>{{ project.created_at }}</td>
+    
+    {% if project.image %}
+        <td><img src="{{ project.image.url }}" width="350" height="200"/></td>
+    {% else %}
+        <td>図面なし</td>
+    {% endif %}
+    <td><a href="{% url 'office-update' project.id %}">編集</a></td>
+    <td><a href="{% url 'office-delete' project.id %}">削除</a></td>
+    <td>{{ project.my_company_done }}</td>
+    <td>{{ project.customer_done }}</td>
+    <tr>
+        {% endfor %}
+    </tr>
+</table>
+{% endblock %}
+

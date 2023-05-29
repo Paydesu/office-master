@@ -13,14 +13,22 @@
         <th scope="col">図面</th>
         <th scope="col">編集</th>
         <th scope="col">削除</th>
+        <th scope="col">用意済み</th>
+        <th scope="col">納品済み</th>
+        <th scope="col">値段</th>
 
         {% for post in posts %}
     </tr>
-    <th scope="row"><a href="{% url 'office-detail' post.id %}">{{ post.customer }}</a></th>
-    <td>{{ post.customer_deadline }}</td>
-    <td>{{ post.my_company_deadline }}</td>
+    <th scope="row">
+        {% if post.customer %}
+            <a href="{% url 'customer-project-list' post.customer.id %}">{{ post.customer }}</a></th>
+        {% else %}
+            未設定</th>
+        {% endif %}
+            <td>{{ post.customer_deadline| date:'m/d (l)' }}</td>
+    <td>{{ post.my_company_deadline| date:'m/d (l)' }}</td>
     <td>{{ post.memo }}</td>
-    <td>{{ post.created_at }}</td>
+    <td>{{ post.created_at | date:'m/d (l)'}}</td>
     
     {% if post.image %}
         <td><img src="{{ post.image.url }}" width="350" height="200"/></td>
@@ -29,8 +37,12 @@
     {% endif %}
     <td><a href="{% url 'office-update' post.id %}">編集</a></td>
     <td><a href="{% url 'office-delete' post.id %}">削除</a></td>
+    <td>{{ post.my_company_done }}</td>
+    <td>{{ post.customer_done }}</td>
+    <td>{{ post.price }}</td>
     <tr>
         {% endfor %}
     </tr>
+    
 </table>
 {% endblock %}

@@ -13,7 +13,7 @@
         <th scope="col">削除</th>
         {% for customer in customers %}
     </tr>
-    <th scope="row">{{ customer.name }}</th>
+    <th scope="row"><a href="{% url 'customer-project-list' customer.id %}">{{ customer.name }}</a></th>
     <td>{{ customer.email }}</td>
     <td>{{ customer.tel_number_1 }}</td>
     <td>{{ customer.fax }}</td>

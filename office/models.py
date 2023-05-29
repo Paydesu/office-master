@@ -46,23 +46,10 @@ class Post(models.Model):
 
     excel_path = models.FilePathField(path=settings.EXCEL_DIR, null=True)
     image = models.ImageField(upload_to='images/',blank=True, null=True ,verbose_name="図面")
-       
+    my_company_done = models.BooleanField(default=False, blank=True ,verbose_name="自社で用意できたらチェック")
+    customer_done = models.BooleanField(default=False, blank=True ,verbose_name="納品できたらチェック")
+
+
     def __str__(self):
         return self.memo
 
-class KidPost(models.Model):
-    post_data = models.ForeignKey(Post, on_delete=models.DO_NOTHING, null=True, blank=True, verbose_name="親情報")
-    customer = models.ForeignKey(Customer, on_delete=models.DO_NOTHING, null=True, blank=True, verbose_name="顧客先")
-    sirial_number = models.IntegerField(blank=True, null=True ,verbose_name="整理番号")
-    add_memo = models.TextField(null=True, blank=True ,verbose_name="追加メモ")
-    material_name = models.TextField(null=True, blank=True ,verbose_name="材質名")
-    created_at = models.DateTimeField(null=True, blank=True, default = datetime.date.today)
-    supply = models.BooleanField(default=True, blank=True ,verbose_name="支給されるならチェック")
-    quantity = models.IntegerField(null=True, blank=True ,verbose_name="個数", default=1)
-    my_company_deadline = models.DateField(null=True, blank=True, default = datetime.date.today ,verbose_name="社内納期")
-    customer_deadline = models.DateField(null=True, default = datetime.date.today, blank=True ,verbose_name="客先納期")
-    price = models.IntegerField(blank=True, null=True ,verbose_name="値段")
-    image = models.ImageField(upload_to='images/',blank=True, null=True ,verbose_name="図面")
-
-    def __str__(self):
-        return self.sirial_number
