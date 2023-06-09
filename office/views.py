@@ -95,10 +95,12 @@ class WinPostCreateView(CreateView):
     form_class = OfficeForm
     template_name = 'office/create.html'
     def form_valid(self, form):
+        
+        return super().form_valid(form)
         # 整理番号のランダム生成
-        def randstr(length):
-            return ''.join([chr(random.randint(65, 90)) for _ in range(length)])
-        w_list = ['月', '火', '水', '木', '金', '土', '日']
+        # def randstr(length):
+        #     return ''.join([chr(random.randint(65, 90)) for _ in range(length)])
+        # w_list = ['月', '火', '水', '木', '金', '土', '日']
         # Excelテンプレートを読み込む
         # excel = Excel().app()
         # excel.DisplayAlerts = False
@@ -208,7 +210,6 @@ class WinPostCreateView(CreateView):
         # time.sleep(1)
         # redirect("http://127.0.0.1:8000/")
         # return response
-
     def get_success_url(self):
         return reverse('office-index')
 
@@ -361,11 +362,12 @@ class MaterialDeleteView(DeleteView):
 
 
 # 検索（Sort）機能
-class SortView(ListView):
+class SortView(CreateView):
     model = Post
     template_name = 'office/sort.html'
     
     def get_context_data(self, **kwargs: Any) -> Dict[str, Any]:
+        
         return super().get_context_data(**kwargs)
     
 
