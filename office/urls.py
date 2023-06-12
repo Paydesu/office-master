@@ -8,6 +8,9 @@ from . import views
 urlpatterns = [
     path('create/', views.WinPostCreateView.as_view(), name = 'office-create'),
     path('', views.PostListView.as_view(), name = 'office-index'),
+    path('done/<int:pk>/', views.PostDoneListView.as_view(), name = 'office-index-done'),
+    path('sort/', views.PostSortView.as_view(), name = 'office-sort'),
+    path('sorted/<int:pk>/<int:customer>/<int:company>', views.OfiiceSortedListView.as_view(), name = 'office-sort'),
     path('wincreate/', views.PostCreateView.as_view(), name = 'win-office-create'),
     path('<int:pk>/update/', views.PostUpdateView.as_view(), name='office-update'),
     path('<int:pk>/detail/', views.PostDetailView.as_view(), name='office-detail'),

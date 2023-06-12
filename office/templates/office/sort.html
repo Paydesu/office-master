@@ -1,0 +1,10 @@
+{% extends 'office/base.html' %}
+{% load widget_tweaks %}
+{% load static %} 
+{% block content %}
+<form action="{% url 'office-sort' %}" method="POST">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <input type="submit" value="投稿" />
+</form>
+{% endblock %}

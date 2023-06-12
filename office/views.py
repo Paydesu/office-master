@@ -1,4 +1,5 @@
 from typing import Any, Dict
+from django import http
 from django.shortcuts import resolve_url, redirect, render, get_object_or_404, HttpResponseRedirect
 from django.urls import reverse_lazy, reverse
 from django.contrib import messages
@@ -52,15 +53,59 @@ class PostListView(ListView):
     context_object_name = 'posts'
     # ordering = ['customer_deadline']
 
+    # 検索 Cookieの設定
+    # def render_to_response(self, context: Dict[str, Any], **response_kwargs: Any) -> HttpResponse:
+    #     response = super().render_to_response(context, **response_kwargs)
+    #     response.set_cookie('key', 'vale')
+    #     return response
 
-# class PostDoneListView(ListView):
-#     model = Post
-#     template_name = 'office/companyDone.html'
-#     context_object_name = 'posts'
-#     def get_queryset(self):
-#         queryset = super().get_queryset()
-#         queryset = queryset.filter(my_company_done=True)
-#         return queryset
+#
+class PostSortView(CreateView):
+    model = Post
+    template_name = 'office/sort.html'
+    form_class = OfficeForm
+    def get_success_url(self):
+        return reverse('office-index')
+
+
+# 取引先でソートした案件を表示する。
+class OfiiceSortedListView(ListView):
+    model = Post
+    template_name = 'office/sort.html'
+    context_object_name = 'posts'
+    ordering = ['my_company_deadline']
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        pk = self.kwargs.get('pk')
+        
+        if pk != 0:
+            queryset = queryset.filter(customer=pk)
+        customer = self.kwargs.get('customer')
+        if customer == 1:
+            queryset = queryset.filter(customer_done=True)
+        elif customer == 0:
+            queryset = queryset.filter(customer_done=False)
+        print(type(customer), customer)
+        company = self.kwargs.get('company')
+        if company == 1:
+            queryset = queryset.filter(my_company_done=True)
+        elif company == 0:
+            queryset = queryset.filter(my_company_done=False)
+        print(queryset)
+        return queryset
+
+
+class PostDoneListView(ListView):
+    model = Post
+    template_name = 'office/companyDone.html'
+    context_object_name = 'posts'
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        queryset = queryset.filter(my_company_done=True)
+        # queryset = queryset.filter(customer="1")
+        return queryset
 
 # class PostUndoneListView(ListView):
 #     model = Post
@@ -272,18 +317,6 @@ class CustomerProjectListView(ListView):
     context_object_name = 'projects'
     ordering = ['my_company_deadline']
 
-    # def get_context_data(self, **kwargs):
-    #     context = super().get_context_data(**kwargs)
-    #     context['pk'] = self.kwargs.get('pk')
-    #     print(context['pk'])
-    #     return context
-    
-    # def get_queryset(self):
-    #     queryset = super().get_queryset()
-    #     pk = self.request.GET.get('pk')
-    #     if pk:
-    #         queryset = queryset.filter(customer=pk)
-    #     return queryset
     def get_queryset(self):
         queryset = super().get_queryset()
         pk = self.kwargs.get('pk')
